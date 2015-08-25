@@ -7,11 +7,10 @@ Introduction
 A simple fluid simulator.  
 Final project for 50.017 Graphics and Visualization course in Singapore University of Technology and Design (SUTD).
 
-<b>Demo video:</b>  
+<b>Demo:</b>  
 [![50.017 Fluidsim](https://j.gifs.com/yxPRge.gif)](http://www.youtube.com/watch?v=gq1194HM_N0 "50.017 Fluidsim Video:")
 
-<b>Features:</b>
-
+<b>Features:</b>  
 - Smooth Particle Hydrodynamics (SPH) OpenCL / C++
 - Marching Cubes with isovalue and edge caching (~8x faster than default Paul Bourke's version)
 - SSE2 operations
