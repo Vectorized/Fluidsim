@@ -12,7 +12,7 @@ Final project for 50.017 Graphics and Visualization course in Singapore Universi
 
 Features:
 - Smooth Particle Hydrodynamics (SPH) OpenCL / C++
-- Marching Cubes with isovalue and edge caching
+- Marching Cubes with isovalue and edge caching (~8x faster than default Paul Bourke's version)
 - SSE2 operations
 - GLSL based reflection and refraction
 
