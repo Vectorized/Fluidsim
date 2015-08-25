@@ -3,7 +3,7 @@
 
 Final project for 50.017 Graphics and Visualization course in Singapore University of Technology and Design (SUTD).
 
-[![50.017 Fluidsim](https://j.gifs.com/yxPRge.gif)](http://www.youtube.com/watch?v=gq1194HM_N0 "50.017 Fluidsim Video:")
+[![50.017 Fluidsim](https://raw.githubusercontent.com/webby1111/Fluidsim/master/preview.gif)](http://www.youtube.com/watch?v=gq1194HM_N0 "50.017 Fluidsim Video:")
 
 <b>Features:</b>  
 - Smooth Particle Hydrodynamics (SPH) OpenCL / C++
