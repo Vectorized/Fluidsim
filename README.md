@@ -1,5 +1,8 @@
+50.017 Final Project - Fluidsim
+===============================
+
 Introduction
-============
+------------
 
 A simple fluid simulator.
 Final project for 50.017 Graphics and Visualization course in Singapore University of Technology and Design (SUTD).
@@ -11,12 +14,12 @@ Features:
 - GLSL based reflection and refraction
 
 Requirements
-============
+------------
 
 OSX and XCode.
 
 Running
-=======
+-------
 
 Change directory into the `executable` folder.
 
@@ -31,7 +34,7 @@ Then run
     ./Fluidsim
 
 Compiling
-=========
+---------
 
 Open "GnV FluidSim.xcodeproj" in xCode.
 
