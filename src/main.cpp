@@ -117,6 +117,10 @@ void mouseFunc(int button, int state, int x, int y)
 		g_mousePressed = true;
 		autoRotator.resetIdle();
 		autoRotator.idleCounterOn = false;
+//#define LEFT_CLICK_ONLY
+#ifdef LEFT_CLICK_ONLY
+		camera.MouseClick(Camera::LEFT, x, y);
+#else
 		switch (button) {
 			case GLUT_LEFT_BUTTON:
 				camera.MouseClick(Camera::LEFT, x, y);
@@ -129,6 +133,7 @@ void mouseFunc(int button, int state, int x, int y)
 			default:
 				break;
 		}
+#endif
 	} else {
 		autoRotator.idleCounterOn = true;
 		camera.MouseRelease(x,y);

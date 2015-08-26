@@ -114,6 +114,8 @@ private:
 	int sphereId;
 	bool centerDrawing;
 	bool drawParticlesMode;
+	int drawParticlesTimer;
+	int DRAW_PARTICLES_TIME_LIMIT;
 	
 	float4 drawingOffset;
 	

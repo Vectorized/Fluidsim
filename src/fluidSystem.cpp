@@ -115,7 +115,9 @@ FluidSystem::FluidSystem(float width, float height, float depth)
 	
 	sphereInited = false;
 	drawParticlesMode = false;
+	drawParticlesTimer = 0;
 	centerDrawing = true;
+	DRAW_PARTICLES_TIME_LIMIT = 60 * 60; // in frames, so it's an approx
 	
 	particleDensities  = new float[PARTICLE_COUNT];
 	particlePositions  = new float4[PARTICLE_COUNT];
@@ -468,9 +470,10 @@ void FluidSystem::draw()
 		glEndList();
 		sphereInited = true;
 	}
-	if (drawParticlesMode)
+	if (drawParticlesMode) {
 		FOREACH_PARTICLE(p) drawParticle(p);
-	else {
+		if (++drawParticlesTimer > DRAW_PARTICLES_TIME_LIMIT) drawParticlesMode = false;
+	} else {
 		verts.clear();
 		norms.clear();
 		faces.clear();
@@ -646,6 +649,7 @@ inline void FluidSystem::generateIsoSurface(float4v &verts, float4v &norms, mini
 void FluidSystem::setDrawParticleMode(bool mode)
 {
 	drawParticlesMode = mode;
+	if (drawParticlesMode) drawParticlesTimer = 0;
 }
 
 bool FluidSystem::getDrawParticleMode()
