@@ -117,7 +117,7 @@ void mouseFunc(int button, int state, int x, int y)
 		g_mousePressed = true;
 		autoRotator.resetIdle();
 		autoRotator.idleCounterOn = false;
-//#define LEFT_CLICK_ONLY
+#define LEFT_CLICK_ONLY
 #ifdef LEFT_CLICK_ONLY
 		camera.MouseClick(Camera::LEFT, x, y);
 #else
