@@ -70,11 +70,11 @@ inline MV<2> MV<dim>::xz() { return MV<2>(MI(v, 0), MI(v, 2)); }\
 inline MV<2> MV<dim>::yz() { return MV<2>(MI(v, 1), MI(v, 2)); }
 
 #define DEC_M_3 \
-MV<3> xyz(); MV<3> yzz(); MV<3> zxy();
+MV<3> xyz(); MV<3> yzx(); MV<3> zxy();
 
 #define DEF_M_3(dim) \
 inline MV<3> MV<dim>::xyz() { return MV<3>(MI(v, 0), MI(v, 1), MI(v, 2)); }\
-inline MV<3> MV<dim>::yzz() { return MV<3>(MI(v, 1), MI(v, 2), MI(v, 0)); }\
+inline MV<3> MV<dim>::yzx() { return MV<3>(MI(v, 1), MI(v, 2), MI(v, 0)); }\
 inline MV<3> MV<dim>::zxy() { return MV<3>(MI(v, 2), MI(v, 0), MI(v, 1)); }
 
 template <int dim> struct MV { };

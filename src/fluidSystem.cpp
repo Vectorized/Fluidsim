@@ -127,12 +127,12 @@ FluidSystem::FluidSystem(float width, float height, float depth)
 	
 	gridMakeParticlePositions  = new float4[PARTICLE_COUNT];
 	gridMakeParticleVelocities = new float4[PARTICLE_COUNT];
-	gridStarts                 = new int[GRID_SIZE];
-	gridEnds                   = new int[GRID_SIZE];
-	gridMakeStarts             = new int[GRID_SIZE];
-	gridMakeEnds               = new int[GRID_SIZE];
-	prevGridStarts             = new int[GRID_SIZE];
-	prevGridEnds	               = new int[GRID_SIZE];
+	gridStarts                 = new int[GRID_SIZE+2];
+	gridEnds                   = new int[GRID_SIZE+2];
+	gridMakeStarts             = new int[GRID_SIZE+2];
+	gridMakeEnds               = new int[GRID_SIZE+2];
+	prevGridStarts             = new int[GRID_SIZE+2];
+	prevGridEnds	               = new int[GRID_SIZE+2];
 	gridMakeParticleNexts      = new int[PARTICLE_COUNT];
 	
 	for (int p=0; p<PARTICLE_COUNT; ++p) gridMakeParticleNexts[p] = -1;
@@ -144,6 +144,15 @@ FluidSystem::FluidSystem(float width, float height, float depth)
 		gridMakeEnds[g] =
 		prevGridStarts[g] =
 		prevGridEnds[g] = -1;
+	}
+	
+	for (int g=GRID_SIZE; g<GRID_SIZE+2; ++g) {
+		gridStarts[g] =
+		gridEnds[g] =
+		gridMakeStarts[g] =
+		gridMakeEnds[g] =
+		prevGridStarts[g] =
+		prevGridEnds[g] = (int) PARTICLE_COUNT - 1;
 	}
 	
 	int p = 0;
@@ -307,6 +316,7 @@ inline void FluidSystem::drawParticle(int particleId)
 #define FOREACH_P(p) \
 int gw = GRID_WIDTH;\
 int gwh = GRID_WIDTH_HEIGHT;\
+int gwmm = GRID_WIDTH-1, ghmm = GRID_HEIGHT-1, gdmm = GRID_DEPTH-1;\
 int p, pEnd, i, j, k, gridK, gridKEnd, gridJK, gridJKEnd, gridIJK, gridIJKEnd;\
 for (k=0, gridK = 0, gridKEnd = GRID_DEPTH * gwh; gridK < gridKEnd; ++k, gridK += gwh)\
 for (j=0, gridJK = gridK, gridJKEnd = gridK + gwh; gridJK < gridJKEnd; ++j, gridJK += gw)\
@@ -314,9 +324,9 @@ for (i=0, gridIJK = gridJK, gridIJKEnd = gridJK + gw; gridIJK < gridIJKEnd; ++i,
 for (p = gridStarts[gridIJK], pEnd = gridEnds[gridIJK]; p < pEnd; ++p)
 
 #define FOREACH_NP(np) \
-int zStart = k-(k>0), zEnd = k+(k<GRID_WIDTH-1);\
-int yStart = j-(j>0), yEnd = j+(j<GRID_HEIGHT-1);\
-int xStart = i-(i>0), xEnd = i+(i<GRID_DEPTH-1);\
+int zStart = max(k-1,0), zEnd = min(k+1,gwmm);\
+int yStart = max(j-1,0), yEnd = min(j+1,ghmm);\
+int xStart = max(i-1,0), xEnd = min(i+1,gdmm);\
 int np, npEnd, gridZ, gridYZ, gridXYZ, gridZEnd, gridYZEnd, gridXYZEnd;\
 int gridYStart = gw * yStart;\
 int gridYEnd = gw * yEnd;\
@@ -501,57 +511,57 @@ void FluidSystem::draw()
 }
 
 
-inline float FluidSystem::mcDensityAtPointByParticle(const float4 &point, int p)
-{
 #ifdef OPENCL_SPH
-	float rSq = (gridMakeParticlePositions[p] - point).absSquared();
+#define GS prevGridStarts
+#define PP gridMakeParticlePositions
 #else
-	float rSq = (particlePositions[p] - point).absSquared();
+#define GS gridStarts
+#define PP particlePositions
 #endif
-	float t = max(0.f, HH - rSq);
-	return particleDensities[p] * CUBE(t);
-}
 
-inline float FluidSystem::mcDensityAtPoint(const float4 &point)
-{
-	float4 pointIndex = (point / H).floor();
+#define ADD_DENSITY_AT_POINT_BY_PARTICLE(var, point, p) \
+{ float t = max(0.f, HH - (PP[p] - point).absSquared());\
+var += particleDensities[p++] * CUBE(t); }
 
-	float density = 0.f;
-	float mct = MC_THRESHOLD;
-
-	static float4 one = float4(1.f);
-	float4 xyzStart = max(pointIndex - one, float4());
-	float4 xyzEnd = min(pointIndex + one, float4(GRID_WIDTH, GRID_HEIGHT, GRID_DEPTH) - one);
+#define ADD_DENSITY_2 \
+{ gridXYZ = gridYZ + xStart; \
+p0 = GS[gridXYZ]; p1 = GS[++gridXYZ]; p2 = GS[++gridXYZ]; p3 = GS[++gridXYZ]; \
+while (p0 < p1) ADD_DENSITY_AT_POINT_BY_PARTICLE(density, point, p0);\
+while (p1 < p2) ADD_DENSITY_AT_POINT_BY_PARTICLE(density, point, p1);\
+if (gridXYZ <= gridYZ + xEnd) while (p2 < p3) ADD_DENSITY_AT_POINT_BY_PARTICLE(density, point, p2); }
 	
-	int xStart = xyzStart[0]; int xEnd = xyzEnd[0];
-	int yStart = xyzStart[1]; int yEnd = xyzEnd[1];
-	int zStart = xyzStart[2]; int zEnd = xyzEnd[2];
-	
-	int p, pEnd, gridZ, gridYZ, gridXYZ, gridZEnd, gridYZEnd, gridXYZEnd;
-	int gridYStart = GRID_WIDTH * yStart;
-	int gridYEnd = GRID_WIDTH * yEnd;
-	int gw = GRID_WIDTH;
-	int gwh = GRID_WIDTH_HEIGHT;
+#define ADD_DENSITY \
+{ gridYZ = gridZ + gridYStart; gridYZEnd = gridZ + gridYEnd; \
+ADD_DENSITY_2; gridYZ += gw; \
+if (density <= mct && gridYZ <= gridYZEnd) ADD_DENSITY_2; gridYZ += gw; \
+if (density <= mct && gridYZ <= gridYZEnd) ADD_DENSITY_2; }
 
-	for (gridZ = gwh * zStart, gridZEnd = gwh * zEnd;
-		 gridZ <= gridZEnd && density <= mct;
-		 gridZ += gwh)
-	for (gridYZ = gridZ + gridYStart, gridYZEnd = gridZ + gridYEnd;
-		 gridYZ <= gridYZEnd && density <= mct;
-		 gridYZ += gw)
-	for (gridXYZ = gridYZ + xStart, gridXYZEnd = gridYZ + xEnd;
-		 gridXYZ <= gridXYZEnd;
-		 ++gridXYZ)
-#ifdef OPENCL_SPH
-	for (p = prevGridStarts[gridXYZ], pEnd = prevGridEnds[gridXYZ]; p < pEnd;
-		 density += mcDensityAtPointByParticle(point, p++));
-#else
-	for (p = gridStarts[gridXYZ], pEnd = gridEnds[gridXYZ]; p < pEnd;
-		 density += mcDensityAtPointByParticle(point, p++));
-#endif
-	
-	return density;
-}
+#define SET_DENSITY(var, p) \
+{ float4 point = p;\
+float4 pointIndex = (point / H).floor();\
+float density = 0.f;\
+float mct = MC_THRESHOLD;\
+\
+static float4 one = float4(1.f);\
+float4 xyzStart = max(pointIndex - one, float4());\
+float4 xyzEnd = min(pointIndex + one, float4(GRID_WIDTH, GRID_HEIGHT, GRID_DEPTH) - one);\
+\
+int xStart = xyzStart[0]; int xEnd = xyzEnd[0];\
+int yStart = xyzStart[1]; int yEnd = xyzEnd[1];\
+int zStart = xyzStart[2]; int zEnd = xyzEnd[2];\
+\
+int p0, p1, p2, p3, gridZ, gridYZ, gridYZEnd, gridXYZ, gridZEnd;\
+int gridYStart = GRID_WIDTH * yStart;\
+int gridYEnd = GRID_WIDTH * yEnd;\
+int gw = GRID_WIDTH;\
+int gwh = GRID_WIDTH_HEIGHT;\
+\
+gridZ = gwh * zStart; gridZEnd = gwh * zEnd;\
+ADD_DENSITY; gridZ += gwh;\
+if (density <= mct && gridZ <= gridZEnd) ADD_DENSITY; gridZ += gwh;\
+if (density <= mct && gridZ <= gridZEnd) ADD_DENSITY;\
+\
+var = density; }
 
 #define DO_8x(c) c;c;c;c;c;c;c;c;
 
@@ -604,7 +614,7 @@ inline void FluidSystem::generateIsoSurface(float4v &verts, float4v &norms, mini
 			for (int y=negM; y<=yEnd; ++y) {
 				int cacheBaseY = cacheBase + (y+m) * stepsZPP;
 				for (int z=negM; z<=zEnd; ++z) {
-					isoCache[cacheBaseY + z + m] = mcDensityAtPoint(float4(xpp, y, z) * MC_RES);
+					SET_DENSITY(isoCache[cacheBaseY + z + m], float4(xpp, y, z) * MC_RES);
 				}
 			}
 		}

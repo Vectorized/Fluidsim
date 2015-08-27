@@ -126,10 +126,6 @@ private:
 	void updateForces();  // To be done in OpenCL
 	
 	void updateParticles();  // To be done in OpenCL
-
-	float mcDensityAtPoint(const float4 &point);
-	
-	float mcDensityAtPointByParticle(const float4 &point, int p);
 	
 	void generateIsoSurface(float4v &verts, float4v &norms, mini_vec<Face> &faces);
 		
