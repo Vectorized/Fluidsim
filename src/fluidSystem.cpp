@@ -510,7 +510,6 @@ void FluidSystem::draw()
 #endif
 }
 
-
 #ifdef OPENCL_SPH
 #define GS prevGridStarts
 #define PP gridMakeParticlePositions
@@ -563,8 +562,6 @@ if (density <= mct && gridZ <= gridZEnd) ADD_DENSITY;\
 \
 var = density; }
 
-#define DO_8x(c) c;c;c;c;c;c;c;c;
-
 inline void FluidSystem::generateIsoSurface(float4v &verts, float4v &norms, mini_vec<Face> &faces)
 {
 	static const int m = MC_MARGIN;
@@ -576,18 +573,6 @@ inline void FluidSystem::generateIsoSurface(float4v &verts, float4v &norms, mini
 	static int stepsZPP = stepsZ + m + m;
 	static int stepsYZPP = stepsYPP * stepsZPP;
 	
-	static float4 cornerOffsetVecs[8];
-	static const int cornerOffsets[8][3] =  {
-		{0,0,1}, {1,0,1}, {1,0,0}, {0,0,0},
-		{0,1,1}, {1,1,1}, {1,1,0}, {0,1,0} };
-	
-	int i=0;
-	DO_8x(
-		cornerOffsetVecs[i] = float4(cornerOffsets[i][0],
-									 cornerOffsets[i][1],
-									 cornerOffsets[i][2]);
-		++i;
-	)
 	float *isoCache = new float[2 * stepsYZPP + 10];
 	CubeEdges *cubeEdges = new CubeEdges[2 * stepsYZPP + 10];
 	
@@ -604,6 +589,8 @@ inline void FluidSystem::generateIsoSurface(float4v &verts, float4v &norms, mini
 	static int yEnd = stepsY + m;
 	static int zEnd = stepsZ + m;
 	
+	static int mpt = MC_POLY_THRESHOLD;
+
 	for (int x=negM; x<xEnd; ++x) {
 		int isoCacheLayers[2] = { (nextIsoCacheLayer + 1) & 1, nextIsoCacheLayer };
 		nextIsoCacheLayer = isoCacheLayers[0];
@@ -626,22 +613,31 @@ inline void FluidSystem::generateIsoSurface(float4v &verts, float4v &norms, mini
 			int ypp = y+m;
 			for (int z=negM; z<zEnd; ++z) {
 				Cube cell;
-				int i=0, cacheBase, cacheBaseY;
+				int cacheBase, cacheBaseY;
 				float4 xyz(x,y,z);
 				int zpp = z+m;
-				DO_8x(
-					cell.p[i] = SCALE * ((xyz + cornerOffsetVecs[i]) * MC_RES + drawingOffset);
-					cacheBase = isoCacheLayers[cornerOffsets[i][0]] * stepsYZPP;
-					cacheBaseY = cacheBase + (cornerOffsets[i][1] + ypp) * stepsZPP;
-					cell.val[i] = isoCache[cacheBaseY + zpp + cornerOffsets[i][2]];
-					++i;
-				)
+				
+#define SET_CELL(i, xx,yy,zz) \
+{ cell.p[i] = SCALE * ((xyz + float4(xx,yy,zz)) * MC_RES + drawingOffset); \
+cacheBase = isoCacheLayers[xx] * stepsYZPP;\
+cacheBaseY = cacheBase + (yy + ypp) * stepsZPP;\
+cell.val[i] = isoCache[cacheBaseY + zpp + zz]; }
+
+				SET_CELL(0, 0,0,1);
+				SET_CELL(1, 1,0,1);
+				SET_CELL(2, 1,0,0);
+				SET_CELL(3, 0,0,0);
+				SET_CELL(4, 0,1,1);
+				SET_CELL(5, 1,1,1);
+				SET_CELL(6, 1,1,0);
+				SET_CELL(7, 0,1,0);
+				
 				int yl = ypp*stepsYPP;
 				CubeEdges &c0 = z>negM ? cubeEdges[cl + yl + zpp - 1] : emptyCube;
 				CubeEdges &c1 = y>negM ? cubeEdges[cl + (ypp - 1) * stepsYPP + zpp] : emptyCube;
 				CubeEdges &c2 = x>negM ? cubeEdges[pl + yl + zpp] : emptyCube;
 				cubeEdges[cl + ypp * stepsYPP + zpp] =
-					polygonize(cell, MC_POLY_THRESHOLD, c0, c1, c2, verts, faces);
+					polygonize(cell, mpt, c0, c1, c2, verts, faces);
 				
 			}
 		}
