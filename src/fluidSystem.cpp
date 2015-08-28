@@ -524,16 +524,14 @@ var += particleDensities[p++] * CUBE(t); }
 
 #define ADD_DENSITY_2 \
 { gridXYZ = gridYZ + xStart; \
-p0 = GS[gridXYZ]; p1 = GS[++gridXYZ]; p2 = GS[++gridXYZ]; p3 = GS[++gridXYZ]; \
+p0 = GS[gridXYZ]; p1 = GS[++gridXYZ]; p2 = GS[++gridXYZ]; \
 while (p0 < p1) ADD_DENSITY_AT_POINT_BY_PARTICLE(density, point, p0);\
-while (p1 < p2) ADD_DENSITY_AT_POINT_BY_PARTICLE(density, point, p1);\
-if (gridXYZ <= gridYZ + xEnd) while (p2 < p3) ADD_DENSITY_AT_POINT_BY_PARTICLE(density, point, p2); }
+while (p1 < p2) ADD_DENSITY_AT_POINT_BY_PARTICLE(density, point, p1); }
 	
 #define ADD_DENSITY \
 { gridYZ = gridZ + gridYStart; gridYZEnd = gridZ + gridYEnd; \
 ADD_DENSITY_2; gridYZ += gw; \
-if (density <= mct && gridYZ <= gridYZEnd) ADD_DENSITY_2; gridYZ += gw; \
-if (density <= mct && gridYZ <= gridYZEnd) ADD_DENSITY_2; }
+if (density <= mct) ADD_DENSITY_2; }
 
 #define SET_DENSITY(var, p) \
 { float4 point = p;\
@@ -541,15 +539,13 @@ float4 pointIndex = (point / H).floor();\
 float density = 0.f;\
 float mct = MC_THRESHOLD;\
 \
-static float4 one = float4(1.f);\
-float4 xyzStart = max(pointIndex - one, float4());\
-float4 xyzEnd = min(pointIndex + one, float4(GRID_WIDTH, GRID_HEIGHT, GRID_DEPTH) - one);\
+float4 xyzStart = max(pointIndex - float4(1.f), float4());\
 \
-int xStart = xyzStart[0]; int xEnd = xyzEnd[0];\
-int yStart = xyzStart[1]; int yEnd = xyzEnd[1];\
-int zStart = xyzStart[2]; int zEnd = xyzEnd[2];\
+int xStart = xyzStart[0]; \
+int yStart = xyzStart[1]; \
+int zStart = xyzStart[2]; \
 \
-int p0, p1, p2, p3, gridZ, gridYZ, gridYZEnd, gridXYZ, gridZEnd;\
+int p0, p1, p2, gridZ, gridYZ, gridYZEnd, gridXYZ, gridZEnd;\
 int gridYStart = GRID_WIDTH * yStart;\
 int gridYEnd = GRID_WIDTH * yEnd;\
 int gw = GRID_WIDTH;\
@@ -557,8 +553,7 @@ int gwh = GRID_WIDTH_HEIGHT;\
 \
 gridZ = gwh * zStart; gridZEnd = gwh * zEnd;\
 ADD_DENSITY; gridZ += gwh;\
-if (density <= mct && gridZ <= gridZEnd) ADD_DENSITY; gridZ += gwh;\
-if (density <= mct && gridZ <= gridZEnd) ADD_DENSITY;\
+if (density <= mct) ADD_DENSITY; \
 \
 var = density; }
 
