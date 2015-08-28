@@ -36,6 +36,11 @@ public:
 	
 	void enterChar(unsigned char c)
 	{
+		if (c == 27) {
+			activate();
+			return;
+		}
+		
 		if (active && c == pass.c_str()[currentIndex]) {
 			if (++currentIndex == pass.size()) exit(0);
 		} else {
