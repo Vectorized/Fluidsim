@@ -63,6 +63,7 @@
 		CE2D6C7A1AB6D161005BCE98 /* fluidSystem.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = fluidSystem.cpp; sourceTree = "<group>"; };
 		CE2D6C7B1AB6D161005BCE98 /* fluidSystem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fluidSystem.h; sourceTree = "<group>"; };
 		CE2D6C7D1AB6D161005BCE98 /* marchingCubes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = marchingCubes.h; sourceTree = "<group>"; };
+		CE2FC54E1B9100020066B25F /* exit_pass.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = exit_pass.h; sourceTree = "<group>"; };
 		CE4CBB0F1AE2556C00818790 /* opencl_helpers.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = opencl_helpers.h; sourceTree = "<group>"; };
 		CE6DEFA11AEE901E006BF4AA /* back.bmp */ = {isa = PBXFileReference; lastKnownFileType = image.bmp; path = back.bmp; sourceTree = "<group>"; };
 		CE6DEFA21AEE901E006BF4AA /* bottom.bmp */ = {isa = PBXFileReference; lastKnownFileType = image.bmp; path = bottom.bmp; sourceTree = "<group>"; };
@@ -163,6 +164,7 @@
 				CE87F6481AB5DCD4009AFCF5 /* camera.h */,
 				CE87F6501AB5DCD4009AFCF5 /* helpers.h */,
 				CE87F6521AB5DCD4009AFCF5 /* main.cpp */,
+				CE2FC54E1B9100020066B25F /* exit_pass.h */,
 				CEBB05421ADCC9EB00E88F2A /* FastVec.h */,
 				CED764011B86E0210080D95D /* mini_vec.h */,
 				CE4CBB0F1AE2556C00818790 /* opencl_helpers.h */,

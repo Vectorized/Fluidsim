@@ -20,6 +20,7 @@
 #include "shader_helpers.h"
 #include "fps.h"
 #include "showcase.h"
+#include "exit_pass.h"
 
 using namespace std;
 
@@ -42,9 +43,16 @@ Camera camera;
 
 FPS fps(windowWidth, windowHeight, 10, 10);
 
-Instructions instructions = Instructions(windowWidth, windowHeight, 10, windowHeight-20, 18);
+Instructions instructions = Instructions(
+	"Instructions:\n"
+	"Use the mouse to drag and rotate the water's box.\n"
+	"Use the arrow keys to rotate the view.\n"
+	"Press 'm' to toggle render mode.",
+	windowWidth, windowHeight, 10, windowHeight - 20, 18);
 
 AutoRotator autoRotator = AutoRotator(&camera);
+
+ExitPass exitPass("pass");
 
 //-------------------------------------------------------------------
 // These are state variables for the UI
@@ -63,8 +71,13 @@ void initRendering();
 // received.
 void keyboardFunc(unsigned char key, int x, int y)
 {
+	if (exitPass.isActive()) {
+		exitPass.enterChar(key);
+		return;
+	}
+	
 	if (key == 27) {
-		exit(0);
+		exitPass.activate();
 	} else if (key == ' ') {
 		Matrix4f eye = Matrix4f::identity();
 		camera.SetRotation( eye );
