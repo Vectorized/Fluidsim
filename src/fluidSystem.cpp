@@ -519,43 +519,106 @@ void FluidSystem::draw()
 #endif
 
 #define ADD_DENSITY_AT_POINT_BY_PARTICLE(var, point, p) \
-{ float t = max(0.f, HH - (PP[p] - point).absSquared());\
-var += particleDensities[p++] * CUBE(t); }
+{ \
+	float t = max(0.f, HH - (PP[p] - point).absSquared()); \
+	var += particleDensities[p] * CUBE(t); \
+}
+
+// Actually, the density query don't need to query all 27 grid cubes to look convincing.
+// We can just query just some of the neighbor grid cubes + the center grid cube.
+#define APPROX_MC_DENSITY_QUERY
+#ifdef APPROX_MC_DENSITY_QUERY
 
 #define ADD_DENSITY_2 \
-{ gridXYZ = gridYZ + xStart; \
-p0 = GS[gridXYZ]; p1 = GS[++gridXYZ]; p2 = GS[++gridXYZ]; \
-while (p0 < p1) ADD_DENSITY_AT_POINT_BY_PARTICLE(density, point, p0);\
-while (p1 < p2) ADD_DENSITY_AT_POINT_BY_PARTICLE(density, point, p1); }
-	
+{ \
+	gridXYZ = gridYZ + xStart; \
+	p0 = GS[gridXYZ]; p1 = GS[++gridXYZ]; p2 = GS[++gridXYZ]; \
+	while (p0 < p1) { ADD_DENSITY_AT_POINT_BY_PARTICLE(density, point, p0); ++p0; } \
+	while (p1 < p2) { ADD_DENSITY_AT_POINT_BY_PARTICLE(density, point, p1); ++p1; } \
+}
+
 #define ADD_DENSITY \
-{ gridYZ = gridZ + gridYStart; gridYZEnd = gridZ + gridYEnd; \
-ADD_DENSITY_2; gridYZ += gw; \
-if (density <= mct) ADD_DENSITY_2; }
+{ \
+	gridYZ = gridZ + gridYStart; \
+	ADD_DENSITY_2; gridYZ += gw; \
+	if (density <= mct) ADD_DENSITY_2; \
+}
 
 #define SET_DENSITY(var, p) \
-{ float4 point = p;\
-float4 pointIndex = (point / H).floor();\
-float density = 0.f;\
-float mct = MC_THRESHOLD;\
-\
-float4 xyzStart = max(pointIndex - float4(1.f), float4());\
-\
-int xStart = xyzStart[0]; \
-int yStart = xyzStart[1]; \
-int zStart = xyzStart[2]; \
-\
-int p0, p1, p2, gridZ, gridYZ, gridYZEnd, gridXYZ, gridZEnd;\
-int gridYStart = GRID_WIDTH * yStart;\
-int gridYEnd = GRID_WIDTH * yEnd;\
-int gw = GRID_WIDTH;\
-int gwh = GRID_WIDTH_HEIGHT;\
-\
-gridZ = gwh * zStart; gridZEnd = gwh * zEnd;\
-ADD_DENSITY; gridZ += gwh;\
-if (density <= mct) ADD_DENSITY; \
-\
-var = density; }
+{ \
+	float4 point = p; \
+	float4 pointIndex = (point / H).floor(); \
+	float density = 0.f; \
+	float mct = MC_THRESHOLD; \
+	\
+	float4 xyzStart = max(pointIndex - float4(1.f), float4()); \
+	\
+	int xStart = xyzStart[0]; \
+	int yStart = xyzStart[1]; \
+	int zStart = xyzStart[2]; \
+	\
+	int p0, p1, p2, gridZ, gridYZ, gridXYZ; \
+	int gridYStart = GRID_WIDTH * yStart; \
+	int gw = GRID_WIDTH; \
+	int gwh = GRID_WIDTH_HEIGHT; \
+	\
+	gridZ = gwh * zStart; \
+	ADD_DENSITY; gridZ += gwh; \
+	if (density <= mct) ADD_DENSITY; \
+	\
+	var = density; \
+}
+
+#else
+
+#define ADD_DENSITY_2 \
+{ \
+	gridXYZ = gridYZ + xStart; \
+	p0 = GS[gridXYZ]; p1 = GS[++gridXYZ]; p2 = GS[++gridXYZ]; p3 = GS[++gridXYZ]; \
+	while (p0 < p1) { ADD_DENSITY_AT_POINT_BY_PARTICLE(density, point, p0); ++p0; } \
+	while (p1 < p2) { ADD_DENSITY_AT_POINT_BY_PARTICLE(density, point, p1); ++p1; } \
+	if (gridXYZ <= gridYZ + xEnd) \
+	while (p2 < p3) { ADD_DENSITY_AT_POINT_BY_PARTICLE(density, point, p2); ++p2; } \
+}
+
+#define ADD_DENSITY \
+{ \
+	gridYZ = gridZ + gridYStart; \
+	ADD_DENSITY_2; gridYZ += gw; \
+	if (density <= mct) ADD_DENSITY_2; gridYZ += gw; \
+	if (density <= mct && gridYZ <= gridZ + gridYEnd) ADD_DENSITY_2; \
+}
+
+#define SET_DENSITY(var, p) \
+{ \
+	float4 point = p; \
+	float4 pointIndex = (point / H).floor(); \
+	float density = 0.f; \
+	float mct = MC_THRESHOLD; \
+	\
+	float4 xyzStart = max(pointIndex-1, float4()); \
+	float4 xyzEnd = min(pointIndex+1, float4(GRID_WIDTH, GRID_HEIGHT, GRID_DEPTH)-1); \
+	\
+	int xStart = xyzStart[0]; int xEnd = xyzEnd[0]; \
+	int yStart = xyzStart[1]; int yEnd = xyzEnd[1]; \
+	int zStart = xyzStart[2]; int zEnd = xyzEnd[2]; \
+	++xEnd; \
+	\
+	int p0, p1, p2, p3, gridZ, gridYZ, gridXYZ, gridZEnd, gridYZEnd, gridXYZEnd; \
+	int gridYStart = GRID_WIDTH * yStart; \
+	int gridYEnd = GRID_WIDTH * yEnd; \
+	int gw = GRID_WIDTH; \
+	int gwh = GRID_WIDTH_HEIGHT; \
+	\
+	gridZ = gwh * zStart; \
+	ADD_DENSITY; gridZ += gwh; \
+	if (density <= mct) ADD_DENSITY; gridZ += gwh; \
+	if (density <= mct && gridZ <= gwh * zEnd) ADD_DENSITY; \
+	\
+	var = density; \
+}
+
+#endif
 
 inline void FluidSystem::generateIsoSurface(float4v &verts, float4v &norms, mini_vec<Face> &faces)
 {
